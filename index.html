@@ -19,10 +19,20 @@
             </h1>
         </div>
         <div class="flex items-center gap-2">
+            <!-- Pulsante Esporta Backup -->
+            <button onclick="esportaJSON()" title="Esporta Backup JSON" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-2 rounded-lg font-medium flex items-center gap-1 transition">
+                📥 Esporta
+            </button>
+            <!-- Pulsante Importa Backup (apre il file picker invisibile) -->
+            <button onclick="document.getElementById('importFile').click()" title="Importa Backup JSON" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-2 rounded-lg font-medium flex items-center gap-1 transition">
+                📤 Importa
+            </button>
+            <input type="file" id="importFile" accept=".json" onchange="importaJSON(event)" class="hidden">
+
             <!-- Pulsante Aggiornamento Globale Web -->
-            <button onclick="aggiornaTuttiDalWeb()" id="btnGlobalUpdate" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition shadow">
+            <button onclick="aggiornaTuttiDalWeb()" id="btnGlobalUpdate" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium flex items-center gap-1.5 transition shadow">
                 <svg id="syncIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Verifica Web
+                Verifica
             </button>
         </div>
     </header>
@@ -371,6 +381,45 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch(() => {});
             });
+        }
+    </script>
+    <script>
+        // ESORTAZIONE BACKUP JSON
+        function esportaJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `version_tracker_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // IMPORTAZIONE BACKUP JSON
+        function importaJSON(event) {
+            const fileReader = new FileReader();
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = function (e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        if (Array.isArray(importedData)) {
+                            if (confirm(`Trovati ${importedData.length} record nel file. Vuoi sostituire l'archivio attuale o fonderli? \n[OK] = Sostituisci tutto, [Annulla] = Annulla`)) {
+                                records = importedData;
+                                salvaStorage();
+                                renderApp();
+                                alert("Backup importato con successo!");
+                            }
+                        } else {
+                            alert("Il file non è in un formato valido.");
+                        }
+                    } catch (error) {
+                        alert("Errore durante la lettura del file JSON.");
+                    }
+                    // Reset input file
+                    event.target.value = '';
+                };
+            }
         }
     </script>
 </body>
